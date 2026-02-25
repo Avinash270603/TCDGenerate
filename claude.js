@@ -12,6 +12,8 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid API key' });
     }
 
+    const body = { ...req.body, max_tokens: 4096 };
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -19,10 +21,14 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
         'x-api-key': apiKey
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(body)
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } 
+    catch(e) { return res.status(500).json({ error: 'Invalid JSON from API: ' + text.substring(0, 200) }); }
+
     return res.status(response.status).json(data);
   } catch (err) {
     return res.status(500).json({ error: err.message });
